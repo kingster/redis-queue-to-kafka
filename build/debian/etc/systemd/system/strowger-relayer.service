@@ -1,0 +1,15 @@
+[Unit]
+Description=Strowger Relayer
+
+[Service]
+ExecStart=/usr/local/bin/strowger-event-relayer
+Type=simple
+User=_USER_
+Restart=on-failure
+RestartSec=5
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=relayer
+
+[Install]
+WantedBy=multi-user.target

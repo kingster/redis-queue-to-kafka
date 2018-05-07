@@ -1,0 +1,37 @@
+#!/bin/bash -e
+
+PAC=_PACKAGE_
+USER=_USER_
+GROUP=_GROUP_
+USER_UID=_UID_
+USER_GID=_GID_
+HOST=$(hostname -f)
+
+variant=base
+if [ "$1" == "configure" ] ; then
+
+    # Source debconf library.
+    . /usr/share/debconf/confmodule
+
+    #creating user if it doesnt exist
+    if ! getent group $GROUP > /dev/null; then
+        groupadd -g $USER_GID $GROUP
+    fi
+
+    if ! getent passwd $USER_UID > /dev/null; then
+       adduser --system --uid $USER_UID --home /usr/share/$PAC --no-create-home \
+       --ingroup $GROUP --disabled-password --shell /bin/false \
+       $USER
+    fi
+
+    # Create log directory if needed
+    for f in /var/cache/$PAC  /var/lib/$PAC ; do
+    [ ! -d "$f" ] && mkdir -p "$f"
+    chown -Rf $USER:$GROUP "$f" || true
+    done
+
+     systemctl daemon-reload
+
+fi
+
+exit 0

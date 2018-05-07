@@ -2,7 +2,6 @@ package relay
 
 import (
 	"fmt"
-	"github.com/adjust/uniuri"
 	"os"
 	"os/signal"
 	"time"
@@ -46,6 +45,11 @@ func (r Relayer) Run() {
 
 	fmt.Println("queues :", queues)
 
+	if(len(queues) <= 0){
+		fmt.Println("No Queues Found, Shutting Down!")
+		os.Exit(0)
+	}
+
 	go r.shutdownHandler()
 
 	for _, queueName := range queues {
@@ -53,9 +57,6 @@ func (r Relayer) Run() {
 
 		taskQueue := newQueue("redis-queue", fmt.Sprintf("connection-%s", hostname()), queueName, nil, source)
 		r.sourceQueues = append(r.sourceQueues, taskQueue)
-		for i := 1; i <= 1000; i++ {
-			taskQueue.Publish(fmt.Sprintf("%d---%s", i, uniuri.NewLen(100)))
-		}
 
 		taskQueue.ReturnAllUnacked()
 		taskQueue.StartConsuming(r.Options.SourceBatchSize, 500*time.Millisecond)
