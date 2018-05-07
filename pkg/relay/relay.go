@@ -17,9 +17,7 @@ type Relayer struct {
 	Sink   KafkaSink
 }
 
-type TaskConsumer struct {
-
-}
+type TaskConsumer struct {}
 
 func (consumer *TaskConsumer) Consume(delivery Delivery) {
 	fmt.Println(delivery.Payload())
@@ -31,6 +29,26 @@ func (consumer *TaskConsumer) Consume(delivery Delivery) {
 	delivery.Ack()
 
 }
+
+type TaskBatchConsumer struct {}
+
+func (consumer *TaskBatchConsumer) Consume(deliveries []Delivery) {
+
+	for _, element := range deliveries {
+		fmt.Println(element)
+	}
+
+	// handle error
+	//delivery.Reject()
+
+	// perform task
+	time.Sleep(time.Second)
+	for _, element := range deliveries {
+		element.Ack()
+	}
+
+}
+
 
 func (r Relayer) Start() string {
 
@@ -72,8 +90,13 @@ func (r Relayer) Start() string {
 		taskQueue.ReturnAllUnacked()
 		taskQueue.StartConsuming(10, 500*time.Millisecond)
 
-		taskConsumer := &TaskConsumer{}
-		taskQueue.AddConsumer("task consumer", taskConsumer)
+		//taskConsumer := &TaskConsumer{}
+		//taskQueue.AddConsumer("task consumer", taskConsumer)
+
+		taskBatchConsumer := &TaskBatchConsumer{}
+		taskQueue.AddBatchConsumer("task-batch-consumer", 5, taskBatchConsumer)
+
+
 
 	}
 

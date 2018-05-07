@@ -23,6 +23,8 @@ const (
 	  redis.call('rpush', dst_list, value)
 	end
 	return value`
+
+	defaultBatchTimeout = time.Second
 	purgeBatchSize      = 100
 )
 
@@ -37,7 +39,6 @@ type Queue interface {
 	ReturnRejected(count int) int
 	ReturnAllRejected() int
 	Size() int
-	//Close() bool
 }
 
 type redisQueue struct {
@@ -98,6 +99,7 @@ func (queue *redisQueue) PurgeQueue() int {
 func (queue *redisQueue) PurgeRejected() int {
 	return queue.deleteRedisList(queue.rejectedKey)
 }
+
 func (queue *redisQueue) Size() int {
 	result := queue.redisClient.LLen(queue.queueKey)
 	if redisErrIsNil(result) {
@@ -105,7 +107,6 @@ func (queue *redisQueue) Size() int {
 	}
 	return int(result.Val())
 }
-
 
 func (queue *redisQueue) UnackedCount() int {
 	result := queue.redisClient.LLen(queue.unackedKey)
@@ -138,7 +139,6 @@ func (queue *redisQueue) ReturnAllUnacked() int {
 
 	return unackedCount
 }
-
 
 // ReturnAllRejected moves all rejected deliveries back to the ready
 // list and returns the number of returned deliveries
@@ -204,6 +204,19 @@ func (queue *redisQueue) AddConsumer(tag string, consumer RedisQueueConsumer) st
 	return name
 }
 
+
+// AddBatchConsumer is similar to AddConsumer, but for batches of deliveries
+func (queue *redisQueue) AddBatchConsumer(tag string, batchSize int, consumer RedisQueueBatchConsumer) string {
+	return queue.AddBatchConsumerWithTimeout(tag, batchSize, defaultBatchTimeout, consumer)
+}
+
+func (queue *redisQueue) AddBatchConsumerWithTimeout(tag string, batchSize int, timeout time.Duration, consumer RedisQueueBatchConsumer) string {
+	name := queue.addConsumer(tag)
+	go queue.consumerBatchConsume(batchSize, timeout, consumer)
+	return name
+}
+
+
 func (queue *redisQueue) addConsumer(tag string) string {
 	if queue.deliveryChan == nil {
 		log.Panicf("rmq queue failed to add consumer, call StartConsuming first! %s", queue)
@@ -267,6 +280,57 @@ func (queue *redisQueue) consumerConsume(consumer RedisQueueConsumer) {
 	for delivery := range queue.deliveryChan {
 		debug(fmt.Sprintf("consumer consume %s %s", delivery, consumer)) 
 		consumer.Consume(delivery)
+	}
+}
+
+func (queue *redisQueue) consumerBatchConsume(batchSize int, timeout time.Duration, consumer RedisQueueBatchConsumer) {
+	batch := []Delivery{}
+	timer := time.NewTimer(timeout)
+	stopTimer(timer) // timer not active yet
+
+	for {
+		select {
+		case <-timer.C:
+			// debug("batch timer fired")
+			// consume batch below
+
+		case delivery, ok := <-queue.deliveryChan:
+			if !ok {
+				// debug("batch channel closed")
+				return
+			}
+
+			batch = append(batch, delivery)
+			// debug(fmt.Sprintf("batch consume added delivery %d", len(batch)))
+
+			if len(batch) == 1 { // added first delivery
+				timer.Reset(timeout) // set timer to fire
+			}
+
+			if len(batch) < batchSize {
+				// debug(fmt.Sprintf("batch consume wait %d < %d", len(batch), batchSize))
+				continue
+			}
+
+			// consume batch below
+		}
+
+		// debug(fmt.Sprintf("batch consume consume %d", len(batch)))
+		consumer.Consume(batch)
+
+		batch = batch[:0] // reset batch
+		stopTimer(timer)  // stop and drain the timer if it fired in between
+	}
+}
+
+func stopTimer(timer *time.Timer) {
+	if timer.Stop() {
+		return
+	}
+
+	select {
+	case <-timer.C:
+	default:
 	}
 }
 
