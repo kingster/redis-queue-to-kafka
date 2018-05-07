@@ -2,10 +2,30 @@ package main
 
 import (
 	"./pkg/relay"
+	"flag"
 	"fmt"
+	"github.com/tkanos/gonfig"
 )
 
+type AppConfiguration struct {
+	RedisEndpoint   string
+	QueuePattern    string
+	KafkaBrokers    string
+	SourceBatchSize int
+	SinkBatchSize   int
+}
+
 func main() {
+
+	configPtr := flag.String("config", "/etc/relayer/relayer.json", "Config File Path ( default /etc/relayer/relayer.json)")
+	flag.Parse()
+
+	configuration := AppConfiguration{}
+	err := gonfig.GetConf(*configPtr, &configuration)
+
+	if err != nil {
+		panic(err)
+	}
 
 	fmt.Println(`
 	.▄▄ · ▄▄▄▄▄▄▄▄        ▄▄▌ ▐ ▄▌ ▄▄ • ▄▄▄ .▄▄▄
@@ -22,15 +42,15 @@ func main() {
 
 	relayer := relay.Relayer{
 		Source: relay.RedisSource{
-			Endpoint: "localhost:6379",
-			Pattern:  "redis-queue*",
+			Endpoint: configuration.RedisEndpoint,
+			Pattern:  configuration.QueuePattern,
 		},
 		Sink: relay.KafkaSink{
-			Brokers: "10.32.230.105:9092,10.33.249.164:9092,10.33.205.205:9092",
+			Brokers: configuration.KafkaBrokers,
 		},
 		Options: &relay.Options{
-			SourceBatchSize: 20,
-			SinkBatchSize:   10,
+			SourceBatchSize: configuration.SourceBatchSize,
+			SinkBatchSize:   configuration.SinkBatchSize,
 		},
 	}
 
