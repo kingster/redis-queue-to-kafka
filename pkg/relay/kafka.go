@@ -31,10 +31,10 @@ func (publisher *KafkaPublisher) deliveryHandler() {
 		switch ev := e.(type) {
 		case *kafka.Message:
 			if ev.TopicPartition.Error != nil {
-				fmt.Printf("Delivery failed: %v\n", ev.TopicPartition)
+				fmt.Printf("Delivery failed: %v %s\n", ev.TopicPartition, ev.Opaque.(Delivery).Payload())
 				//reject message?
 			} else {
-				fmt.Printf("Delivered message to %v\n", ev.TopicPartition)
+				debug(fmt.Sprintf("Delivered message to %v\n", ev.TopicPartition))
 				ev.Opaque.(Delivery).Ack()
 			}
 		}
