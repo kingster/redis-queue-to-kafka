@@ -23,6 +23,7 @@ const (
 	  redis.call('rpush', dst_list, value)
 	end
 	return value`
+	purgeBatchSize      = 100
 )
 
 type Queue interface {
@@ -86,6 +87,15 @@ func (queue *redisQueue) PublishBytes(payload []byte) bool {
 	return queue.Publish(string(payload))
 }
 
+//PurgeQueue removes all elements from the queue and returns the number of purged deliveries
+func (queue *redisQueue) PurgeQueue() int {
+	return queue.deleteRedisList(queue.queueKey)
+}
+
+// PurgeRejected removes all rejected deliveries from the queue and returns the number of purged deliveries
+func (queue *redisQueue) PurgeRejected() int {
+	return queue.deleteRedisList(queue.rejectedKey)
+}
 func (queue *redisQueue) Size() int {
 	result := queue.redisClient.LLen(queue.queueKey)
 	if redisErrIsNil(result) {
@@ -102,6 +112,15 @@ func (queue *redisQueue) UnackedCount() int {
 	}
 	return int(result.Val())
 }
+
+func (queue *redisQueue) RejectedCount() int {
+	result := queue.redisClient.LLen(queue.rejectedKey)
+	if redisErrIsNil(result) {
+		return 0
+	}
+	return int(result.Val())
+}
+
 // ReturnAllUnacked moves all unacked deliveries back to the ready in front of the queue
 // queue and deletes the unacked key afterwards, returns number of returned
 // deliveries
@@ -220,8 +239,6 @@ func (queue *redisQueue) batchSize() int {
 	return prefetchLimit
 }
 
-
-
 // consumeBatch tries to read batchSize deliveries, returns true if any and all were consumed
 func (queue *redisQueue) consumeBatch(batchSize int) bool {
 	if batchSize == 0 {
@@ -250,9 +267,33 @@ func (queue *redisQueue) consumerConsume(consumer RedisQueueConsumer) {
 	}
 }
 
+//// return number of deleted list items
+//// https://www.redisgreen.net/blog/deleting-large-lists
+func (queue *redisQueue) deleteRedisList(key string) int {
+	llenResult := queue.redisClient.LLen(key)
+	total := int(llenResult.Val())
+	if total == 0 {
+		return 0 // nothing to do
+	}
+
+	// delete elements without blocking
+	for todo := total; todo > 0; todo -= purgeBatchSize {
+		// minimum of purgeBatchSize and todo
+		batchSize := purgeBatchSize
+		if batchSize > todo {
+			batchSize = todo
+		}
+
+		// remove one batch
+		queue.redisClient.LTrim(key, 0, int64(-1-batchSize))
+	}
+
+	return total
+}
 
 func debug(message string) {
 	log.Printf("rmq debug: %s", message) 
 }
 
+//rediQueue impl Queue
 var _ Queue = (*redisQueue)(nil)

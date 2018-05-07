@@ -66,7 +66,7 @@ func (r Relayer) Start() string {
 		// element is the element from someSlice for where we are
 		fmt.Println(element)
 
-		taskQueue = newQueue("service", "connection-name", element, nil, source)
+		taskQueue = newQueue("redis-queue",fmt.Sprintf("connection-%s", hostname()), element, nil, source)
 		for i := 1; i <= 0; i++ {
 			taskQueue.Publish(fmt.Sprintf("%d---%s", i,  uniuri.NewLen(100)))
 		}
@@ -83,4 +83,14 @@ func (r Relayer) Start() string {
 
 
 	return ""
+}
+
+func hostname() string {
+	name, err := os.Hostname()
+	if err != nil {
+		return "default-hostname"
+	} else {
+		return name
+	}
+
 }
