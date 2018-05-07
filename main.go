@@ -20,7 +20,7 @@ func main() {
 .▀  ▀ ▀▀▀ .▀▀▀  ▀  ▀   ▀ •  ▀▀▀ .▀  ▀
 	`)
 
-	instance := relay.Relayer{
+	relayer := relay.Relayer{
 		Source: relay.RedisSource{
 			Endpoint: "localhost:6379",
 			Pattern: "redis-queue*",
@@ -28,8 +28,12 @@ func main() {
 		Sink: relay.KafkaSink{
 			Brokers: "",
 		},
+		Options: &relay.Options{
+			SourceBatchSize: 20,
+			SinkBatchSize: 10,
+		},
 	}
 
-	instance.Start()
+	relayer.Run()
 
 }
