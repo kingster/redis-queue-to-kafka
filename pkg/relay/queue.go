@@ -32,6 +32,8 @@ type Queue interface {
 	StartConsuming(prefetchLimit int, pollDuration time.Duration) bool
 	StopConsuming() bool
 	AddConsumer(tag string, consumer RedisQueueConsumer) string
+	PurgeQueue() int
+	PurgeRejected() int
 	ReturnRejected(count int) int
 	ReturnAllRejected() int
 	Size() int
@@ -209,7 +211,7 @@ func (queue *redisQueue) addConsumer(tag string) string {
 
 	name := fmt.Sprintf("%s-%s", tag, uniuri.NewLen(6))
 
-	log.Printf("rmq queue added consumer %s %s", queue, name)
+	log.Printf("relay redis queue added consumer %s %s", queue, name)
 	return name
 }
 
@@ -223,7 +225,8 @@ func (queue *redisQueue) consume() {
 		}
 
 		if queue.consumingStopped {
-			log.Printf("rmq queue stopped consuming %s", queue)
+			log.Printf("relayer redis queue stopped consuming %s", queue)
+			close(queue.deliveryChan)
 			return
 		}
 	}
@@ -245,10 +248,10 @@ func (queue *redisQueue) consumeBatch(batchSize int) bool {
 		return false
 	}
 
-	for i := 0; i < batchSize; i++ {
+	for i := 0; i < batchSize && !queue.consumingStopped; i++ {
 		result := queue.redisClient.RPopLPush(queue.queueKey, queue.unackedKey)
 		if redisErrIsNil(result) {
-			debug(fmt.Sprintf("rmq queue consumed last batch %s %d", queue, i)) 
+			debug(fmt.Sprintf("redis queue consumed last batch %s %d", queue, i))
 			return false
 		}
 
@@ -256,7 +259,7 @@ func (queue *redisQueue) consumeBatch(batchSize int) bool {
 		queue.deliveryChan <- newDelivery(result.Val(), queue.unackedKey, queue.rejectedKey, queue.redisClient)
 	}
 
-	debug(fmt.Sprintf("rmq queue consumed batch %s %d", queue, batchSize)) 
+	debug(fmt.Sprintf("redis queue consumed batch %s %d", queue, batchSize))
 	return true
 }
 
@@ -292,7 +295,7 @@ func (queue *redisQueue) deleteRedisList(key string) int {
 }
 
 func debug(message string) {
-	log.Printf("rmq debug: %s", message) 
+	log.Printf("redis queue debug: %s", message)
 }
 
 //rediQueue impl Queue

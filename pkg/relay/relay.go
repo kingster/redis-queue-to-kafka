@@ -50,24 +50,22 @@ func (r Relayer) Start() string {
 		sigchan := make(chan os.Signal, 10)
 		signal.Notify(sigchan, os.Interrupt)
 		<-sigchan
-		fmt.Println("Program killed !")
 
 		if taskQueue != nil {
+			fmt.Println("Shutdown Triggered.... StopConsuming !")
 			taskQueue.StopConsuming()
 		}
 
-		// do last actions and wait for all write operations to end
-
+		time.Sleep(5*time.Second) //Allow last 5 secs to cleanup
 		os.Exit(0)
 	}()
-
 
 	for _, element := range queues {
 		// element is the element from someSlice for where we are
 		fmt.Println(element)
 
 		taskQueue = newQueue("redis-queue",fmt.Sprintf("connection-%s", hostname()), element, nil, source)
-		for i := 1; i <= 0; i++ {
+		for i := 1; i <= 100; i++ {
 			taskQueue.Publish(fmt.Sprintf("%d---%s", i,  uniuri.NewLen(100)))
 		}
 
