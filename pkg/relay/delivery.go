@@ -50,7 +50,6 @@ func (delivery *RedisDelivery) Reject() bool {
 	return delivery.move(delivery.rejectedKey)
 }
 
-
 func (delivery *RedisDelivery) move(key string) bool {
 	if redisErrIsNil(delivery.redisClient.LPush(key, delivery.payload)) {
 		return false

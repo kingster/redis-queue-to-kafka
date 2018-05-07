@@ -2,24 +2,23 @@ package relay
 
 import (
 	"fmt"
-	"time"
 	"github.com/adjust/uniuri"
 	"os"
 	"os/signal"
+	"time"
 )
 
 type Options struct {
 	SourceBatchSize int
-	SinkBatchSize int
+	SinkBatchSize   int
 }
 
 type Relayer struct {
-	Source RedisSource
-	Sink   KafkaSink
-	Options *Options
+	Source       RedisSource
+	Sink         KafkaSink
+	Options      *Options
 	sourceQueues []*redisQueue
 }
-
 
 func (r Relayer) shutdownHandler() {
 	sigchan := make(chan os.Signal, 10)
@@ -31,11 +30,11 @@ func (r Relayer) shutdownHandler() {
 		taskQueue.StopConsuming()
 	}
 
-	time.Sleep(5*time.Second) //Allow last 5 secs to cleanup
+	time.Sleep(time.Second)
 	os.Exit(0)
 }
 
-func (r Relayer) Run()  {
+func (r Relayer) Run() {
 
 	source := r.createClient()
 	queues, err := r.getQueues(source)
@@ -52,10 +51,10 @@ func (r Relayer) Run()  {
 	for _, queueName := range queues {
 		fmt.Println(queueName)
 
-		taskQueue := newQueue("redis-queue",fmt.Sprintf("connection-%s", hostname()), queueName, nil, source)
+		taskQueue := newQueue("redis-queue", fmt.Sprintf("connection-%s", hostname()), queueName, nil, source)
 		r.sourceQueues = append(r.sourceQueues, taskQueue)
 		for i := 1; i <= 1000; i++ {
-			taskQueue.Publish(fmt.Sprintf("%d---%s", i,  uniuri.NewLen(100)))
+			taskQueue.Publish(fmt.Sprintf("%d---%s", i, uniuri.NewLen(100)))
 		}
 
 		taskQueue.ReturnAllUnacked()

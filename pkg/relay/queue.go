@@ -2,11 +2,11 @@ package relay
 
 import (
 	"fmt"
+	"github.com/adjust/uniuri"
+	"github.com/go-redis/redis"
 	"log"
 	"strings"
 	"time"
-	"github.com/go-redis/redis"
-	"github.com/adjust/uniuri"
 )
 
 const (
@@ -16,7 +16,7 @@ const (
 	phQueue    = "{queue}"    // queue name
 	phConsumer = "{consumer}" // consumer name (consisting of tag and token)
 
-	lpoprpush  = `
+	lpoprpush = `
 	local src_list, dst_list = ARGV[1], ARGV[2];
 	local value = redis.call('lpop', src_list)
 	if value then -- avoid pushing nils
@@ -81,7 +81,7 @@ func (queue *redisQueue) String() string {
 
 // Publish adds a delivery with the given payload to the queue
 func (queue *redisQueue) Publish(payload string) bool {
-	// debug(fmt.Sprintf("publish %s %s", payload, queue)) 
+	// debug(fmt.Sprintf("publish %s %s", payload, queue))
 	return !redisErrIsNil(queue.redisClient.LPush(queue.queueKey, payload))
 }
 
@@ -170,7 +170,6 @@ func (queue *redisQueue) ReturnRejected(count int) int {
 	return count
 }
 
-
 // StartConsuming starts consuming into a channel of size prefetchLimit
 // must be called before consumers can be added!
 // pollDuration is the duration the queue sleeps before checking for new deliveries
@@ -204,7 +203,6 @@ func (queue *redisQueue) AddConsumer(tag string, consumer RedisQueueConsumer) st
 	return name
 }
 
-
 // AddBatchConsumer is similar to AddConsumer, but for batches of deliveries
 func (queue *redisQueue) AddBatchConsumer(tag string, batchSize int, consumer RedisQueueBatchConsumer) string {
 	return queue.AddBatchConsumerWithTimeout(tag, batchSize, defaultBatchTimeout, consumer)
@@ -215,7 +213,6 @@ func (queue *redisQueue) AddBatchConsumerWithTimeout(tag string, batchSize int, 
 	go queue.consumerBatchConsume(batchSize, timeout, consumer)
 	return name
 }
-
 
 func (queue *redisQueue) addConsumer(tag string) string {
 	if queue.deliveryChan == nil {
@@ -268,7 +265,7 @@ func (queue *redisQueue) consumeBatch(batchSize int) bool {
 			return false
 		}
 
-		debug(fmt.Sprintf("consume %d/%d %s %s", i, batchSize, result.Val(), queue)) 
+		debug(fmt.Sprintf("consume %d/%d %s %s", i, batchSize, result.Val(), queue))
 		queue.deliveryChan <- newDelivery(result.Val(), queue.unackedKey, queue.rejectedKey, queue.redisClient)
 	}
 
@@ -278,7 +275,7 @@ func (queue *redisQueue) consumeBatch(batchSize int) bool {
 
 func (queue *redisQueue) consumerConsume(consumer RedisQueueConsumer) {
 	for delivery := range queue.deliveryChan {
-		debug(fmt.Sprintf("consumer consume %s %s", delivery, consumer)) 
+		debug(fmt.Sprintf("consumer consume %s %s", delivery, consumer))
 		consumer.Consume(delivery)
 	}
 }

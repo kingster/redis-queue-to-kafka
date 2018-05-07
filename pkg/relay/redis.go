@@ -6,7 +6,7 @@ import (
 
 type RedisSource struct {
 	Endpoint, Password string
-	Pattern string
+	Pattern            string
 }
 
 func (r Relayer) createClient() *redis.Client {
@@ -22,7 +22,7 @@ func (r Relayer) createClient() *redis.Client {
 
 func (r Relayer) getQueues(client *redis.Client) ([]string, error) {
 	queues, err := client.Keys(r.Source.Pattern).Result()
-	return queues , err
+	return queues, err
 }
 
 // redisErrIsNil returns false if there is no error, true if the result error is nil and panics if there's another error

@@ -1,9 +1,10 @@
 package relay
 
 import (
-	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"fmt"
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 )
+
 type KafkaSink struct {
 	Brokers string
 }
@@ -11,17 +12,17 @@ type KafkaSink struct {
 func (r Relayer) createProducer() (*kafka.Producer, error) {
 	producer, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": r.Sink.Brokers})
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 	return producer, nil
 }
 
 type KafkaPublisher struct {
-	producer          *kafka.Producer
-	topic             string
+	producer *kafka.Producer
+	topic    string
 }
 
-func (publisher *KafkaPublisher) HandleDelivery(){
+func (publisher *KafkaPublisher) HandleDelivery() {
 	go publisher.deliveryHandler()
 }
 
@@ -40,15 +41,14 @@ func (publisher *KafkaPublisher) deliveryHandler() {
 	}
 }
 
-
 func (publisher *KafkaPublisher) Consume(deliveries []Delivery) {
 
 	// perform task
 	for _, element := range deliveries {
 		publisher.producer.Produce(&kafka.Message{
 			TopicPartition: kafka.TopicPartition{Topic: &publisher.topic, Partition: kafka.PartitionAny},
-			Value:   []byte(element.Payload()),
-			Opaque:  element,
+			Value:          []byte(element.Payload()),
+			Opaque:         element,
 		}, nil)
 	}
 

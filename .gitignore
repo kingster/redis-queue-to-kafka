@@ -20,3 +20,6 @@ fabric.properties
 *.dylib
 *.test
 *.out
+
+strowger-event-relayer
+*.deb

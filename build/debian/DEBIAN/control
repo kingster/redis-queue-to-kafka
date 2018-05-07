@@ -1,0 +1,8 @@
+Package: strowger-event-relayer
+Version: 1._VERSION_
+Architecture: amd64
+Section: base
+Priority: standard
+Depends: librdkafka-dev( >= 0.11.4)
+Maintainer: Kinshuk Bairagi <me@kinshuk.in>
+Description: Redis Queue to Kafka Relayer
