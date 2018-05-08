@@ -4,7 +4,7 @@ import (
 	"./pkg/relay"
 	"flag"
 	"fmt"
-	"github.com/pubnub/go-metrics-statsd"
+	"github.com/kingster/go-metrics-statsd"
 	"github.com/rcrowley/go-metrics"
 	"github.com/tkanos/gonfig"
 	"log"
@@ -50,8 +50,6 @@ func main() {
 
 	addr, _ := net.ResolveUDPAddr("udp", ":8125")
 	go statsd.StatsD(metrics.DefaultRegistry, 30*time.Second, "strowger", addr)
-	// w, _ := syslog.Dial("unixgram", "/dev/log", syslog.LOG_INFO, "metrics")
-	// go metrics.Syslog(metrics.DefaultRegistry, 60e9, w)
 
 	relayer := relay.Relayer{
 		Source: relay.RedisSource{

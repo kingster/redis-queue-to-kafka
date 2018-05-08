@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/go-redis/redis"
 	"github.com/rcrowley/go-metrics"
+	"strings"
 )
 
 type Delivery interface {
@@ -14,14 +15,16 @@ type Delivery interface {
 
 type RedisDelivery struct {
 	payload     string
+	queue       string
 	unackedKey  string
 	rejectedKey string
 	redisClient *redis.Client
 }
 
-func newDelivery(payload, unackedKey, rejectedKey string, redisClient *redis.Client) *RedisDelivery {
+func newDelivery(payload, queue, unackedKey, rejectedKey string, redisClient *redis.Client) *RedisDelivery {
 	return &RedisDelivery{
 		payload:     payload,
+		queue:       queue,
 		unackedKey:  unackedKey,
 		rejectedKey: rejectedKey,
 		redisClient: redisClient,
@@ -41,16 +44,17 @@ func (delivery *RedisDelivery) Ack() bool {
 
 	result := delivery.redisClient.LRem(delivery.unackedKey, 1, delivery.payload)
 	if redisErrIsNil(result) {
-		metrics.GetOrRegisterCounter("relay.delivery.remove.failure", nil).Inc(1)
+		metrics.GetOrRegisterCounter(metricsDeliveryRemoveFailure, nil).Inc(1)
 		return false
 	}
 
-	metrics.GetOrRegisterCounter("relay.delivery.ack", nil).Inc(1)
+	metrics.GetOrRegisterCounter(strings.Replace(metricsAckTemplate, phQueue, delivery.queue, 1), nil).Inc(1)
+
 	return result.Val() == 1
 }
 
 func (delivery *RedisDelivery) Reject() bool {
-	metrics.GetOrRegisterCounter("relay.delivery.nack", nil).Inc(1)
+	metrics.GetOrRegisterCounter(strings.Replace(metricsNAckTemplate, phQueue, delivery.queue, 1), nil).Inc(1)
 	return delivery.move(delivery.rejectedKey)
 }
 
