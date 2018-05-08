@@ -12,5 +12,5 @@ make
 
 ```bash
 sudo dpkg -i strowger-event-relayer.deb #if build locally
-sudo systemctl start  strowger-relayer
+sudo systemctl restart  strowger-relayer
 ```

@@ -4,9 +4,11 @@ import (
 	"./pkg/relay"
 	"flag"
 	"fmt"
+	"github.com/pubnub/go-metrics-statsd"
 	"github.com/rcrowley/go-metrics"
 	"github.com/tkanos/gonfig"
 	"log"
+	"net"
 	"os"
 	"time"
 )
@@ -46,6 +48,8 @@ func main() {
 
 	go metrics.Log(metrics.DefaultRegistry, 30*time.Second, log.New(os.Stdout, "metrics: ", log.Lmicroseconds))
 
+	addr, _ := net.ResolveUDPAddr("udp", ":8125")
+	go statsd.StatsD(metrics.DefaultRegistry, 30*time.Second, "strowger", addr)
 	// w, _ := syslog.Dial("unixgram", "/dev/log", syslog.LOG_INFO, "metrics")
 	// go metrics.Syslog(metrics.DefaultRegistry, 60e9, w)
 
