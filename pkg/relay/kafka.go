@@ -32,6 +32,7 @@ func (publisher *KafkaPublisher) deliveryHandler() {
 		case *kafka.Message:
 			if ev.TopicPartition.Error != nil {
 				fmt.Printf("Delivery failed: %v %s\n", ev.TopicPartition, ev.Opaque.(Delivery).Payload())
+				ev.Opaque.(Delivery).Reject()
 				//reject message?
 			} else {
 				debug(fmt.Sprintf("Delivered message to %v\n", ev.TopicPartition))

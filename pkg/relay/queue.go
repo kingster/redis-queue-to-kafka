@@ -266,7 +266,7 @@ func (queue *redisQueue) consumeBatch(batchSize int) bool {
 		}
 
 		debug(fmt.Sprintf("consume %d/%d %s %s", i, batchSize, result.Val(), queue))
-		queue.deliveryChan <- newDelivery(result.Val(), queue.unackedKey, queue.rejectedKey, queue.redisClient)
+		queue.deliveryChan <- newDelivery(result.Val(), queue.queueKey, queue.unackedKey, queue.rejectedKey, queue.redisClient)
 	}
 
 	debug(fmt.Sprintf("redis queue consumed batch %s %d", queue, batchSize))
