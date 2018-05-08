@@ -45,7 +45,7 @@ func (r Relayer) Run() {
 
 	fmt.Println("queues :", queues)
 
-	if(len(queues) <= 0){
+	if len(queues) <= 0 {
 		fmt.Println("No Queues Found, Shutting Down!")
 		os.Exit(0)
 	}

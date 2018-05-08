@@ -4,7 +4,11 @@ import (
 	"./pkg/relay"
 	"flag"
 	"fmt"
+	"github.com/rcrowley/go-metrics"
 	"github.com/tkanos/gonfig"
+	"log"
+	"os"
+	"time"
 )
 
 type AppConfiguration struct {
@@ -39,6 +43,11 @@ func main() {
 ▐█•█▌▐█▄▄▌▐█▌▐▌▐█ ▪▐▌ ▐█▀·.▐█▄▄▌▐█•█▌
 .▀  ▀ ▀▀▀ .▀▀▀  ▀  ▀   ▀ •  ▀▀▀ .▀  ▀
 	`)
+
+	go metrics.Log(metrics.DefaultRegistry, 30*time.Second, log.New(os.Stdout, "metrics: ", log.Lmicroseconds))
+
+	// w, _ := syslog.Dial("unixgram", "/dev/log", syslog.LOG_INFO, "metrics")
+	// go metrics.Syslog(metrics.DefaultRegistry, 60e9, w)
 
 	relayer := relay.Relayer{
 		Source: relay.RedisSource{

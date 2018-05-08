@@ -3,6 +3,7 @@ package relay
 import (
 	"fmt"
 	"github.com/go-redis/redis"
+	"github.com/rcrowley/go-metrics"
 )
 
 type Delivery interface {
@@ -40,13 +41,16 @@ func (delivery *RedisDelivery) Ack() bool {
 
 	result := delivery.redisClient.LRem(delivery.unackedKey, 1, delivery.payload)
 	if redisErrIsNil(result) {
+		metrics.GetOrRegisterCounter("relay.delivery.remove.failure", nil).Inc(1)
 		return false
 	}
 
+	metrics.GetOrRegisterCounter("relay.delivery.ack", nil).Inc(1)
 	return result.Val() == 1
 }
 
 func (delivery *RedisDelivery) Reject() bool {
+	metrics.GetOrRegisterCounter("relay.delivery.nack", nil).Inc(1)
 	return delivery.move(delivery.rejectedKey)
 }
 
