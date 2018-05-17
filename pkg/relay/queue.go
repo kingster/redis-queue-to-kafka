@@ -356,7 +356,7 @@ func (queue *redisQueue) deleteRedisList(key string) int {
 }
 
 func debug(message string) {
-	log.Printf("redis queue debug: %s", message)
+	// log.Printf("redis queue debug: %s", message)
 }
 
 //rediQueue impl Queue

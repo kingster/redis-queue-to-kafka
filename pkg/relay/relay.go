@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"time"
+	"syscall"
 )
 
 type Options struct {
@@ -19,9 +20,9 @@ type Relayer struct {
 	sourceQueues []*redisQueue
 }
 
-func (r Relayer) shutdownHandler() {
+func (r Relayer) shutdownHandler(stopped chan bool) {
 	sigchan := make(chan os.Signal, 10)
-	signal.Notify(sigchan, os.Interrupt)
+	signal.Notify(sigchan, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
 	<-sigchan
 
 	for _, taskQueue := range r.sourceQueues {
@@ -29,8 +30,7 @@ func (r Relayer) shutdownHandler() {
 		taskQueue.StopConsuming()
 	}
 
-	time.Sleep(time.Second)
-	os.Exit(0)
+	stopped <- true
 }
 
 func (r Relayer) Run() {
@@ -38,6 +38,7 @@ func (r Relayer) Run() {
 	source := r.createClient()
 	queues, err := r.getQueues(source)
 	sink, err := r.createProducer()
+	stopped := make(chan bool)
 
 	if err != nil {
 		panic(err)
@@ -50,7 +51,7 @@ func (r Relayer) Run() {
 		os.Exit(0)
 	}
 
-	go r.shutdownHandler()
+	go r.shutdownHandler(stopped)
 
 	for _, queueName := range queues {
 		fmt.Println(queueName)
@@ -61,16 +62,16 @@ func (r Relayer) Run() {
 		taskQueue.ReturnAllUnacked()
 		taskQueue.StartConsuming(r.Options.SourceBatchSize, 500*time.Millisecond)
 
-		//taskConsumer := &TaskConsumer{}
-		//taskQueue.AddConsumer("task consumer", taskConsumer)
-
 		taskKafkaPublisher := &KafkaPublisher{sink, queueName}
 		taskKafkaPublisher.HandleDelivery()
 		taskQueue.AddBatchConsumer("task-batch-consumer", r.Options.SinkBatchSize, taskKafkaPublisher)
 
 	}
 
-	select {}
+
+	fmt.Println("Wating for Tasks to Complete | Shutdown")
+	<-stopped
+	fmt.Println("Shutdown Consumers")
 }
 
 func hostname() string {

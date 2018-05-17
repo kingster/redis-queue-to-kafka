@@ -19,6 +19,8 @@ type AppConfiguration struct {
 	KafkaBrokers    string
 	SourceBatchSize int
 	SinkBatchSize   int
+	ZKConnect       []string
+	Zone            string
 }
 
 func main() {
@@ -65,6 +67,12 @@ func main() {
 		},
 	}
 
-	relayer.Run()
+	leadership := relay.LeaderElector{
+		ZKConnect:    configuration.ZKConnect,
+		ElectionNode: fmt.Sprintf("/election/relayer-%s", configuration.Zone),
+	}
+
+	leadership.SetTask(relayer.Run)
+	leadership.Elect()
 
 }
