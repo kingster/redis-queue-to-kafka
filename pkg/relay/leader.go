@@ -77,7 +77,7 @@ func (leadership *LeaderElector) Elect() {
 				return
 			}
 
-			fmt.Println("Candidate received status message: <", status, ">.")
+			log.Println("Candidate received status message: <", status, ">.")
 			if status.Role == leaderelection.Leader {
 				leadership.doLeaderStuff(election, status, leadership.resultChannel, leadership.connFailCh)
 				return
@@ -98,7 +98,7 @@ func (leadership *LeaderElector) Elect() {
 
 func (leadership *LeaderElector) logElectionResults() {
 	for elem := range leadership.resultChannel {
-		fmt.Println("LeaderShip Update :::: ", elem)
+		log.Println("LeaderShip Update :::: ", elem)
 	}
 }
 
@@ -110,7 +110,7 @@ func (leadership *LeaderElector) doLeaderStuff(leaderElector *leaderelection.Ele
 	//		status.NowFollowing, ">")
 	//	panic("Test failed!!!! Please please please find a better way to signal test failure")
 	//}
-	fmt.Println("\tCandidate <", status.CandidateID, "> is Leader.")
+	log.Println("\tCandidate <", status.CandidateID, "> is Leader.")
 
 	// do some work when I become leader
 	select {

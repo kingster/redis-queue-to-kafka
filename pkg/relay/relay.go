@@ -68,8 +68,6 @@ func (r Relayer) Run() {
 
 	}
 
-
-	fmt.Println("Wating for Tasks to Complete | Shutdown")
 	<-stopped
 	fmt.Println("Shutdown Consumers")
 }
