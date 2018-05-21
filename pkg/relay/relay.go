@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"time"
 	"syscall"
+	"time"
 )
 
 type Options struct {

@@ -87,11 +87,11 @@ func (leadership *LeaderElector) Elect() {
 			leadership.resultChannel <- ElectionResponse{false, status.CandidateID}
 			election.Resign()
 			return
-		case <-time.After(time.Second * 100):
-			fmt.Println("\t\t\tERROR!!! Timer expired, stop waiting to become leader for", status.CandidateID)
-			election.Resign()
-			leadership.resultChannel <- ElectionResponse{false, status.CandidateID}
-			return
+			//case <-time.After(time.Second * 100):
+			//	fmt.Println("\t\t\tERROR!!! Timer expired, stop waiting to become leader for", status.CandidateID)
+			//	election.Resign()
+			//	leadership.resultChannel <- ElectionResponse{false, status.CandidateID}
+			//	return
 		}
 	}
 }
