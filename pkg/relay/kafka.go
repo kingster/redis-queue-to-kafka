@@ -37,6 +37,7 @@ func (publisher *KafkaPublisher) deliveryHandler() {
 			} else {
 				debug(fmt.Sprintf("Delivered message to %v\n", ev.TopicPartition))
 				ev.Opaque.(Delivery).Ack()
+
 			}
 		}
 	}

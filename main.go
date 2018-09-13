@@ -65,6 +65,7 @@ func main() {
 			SourceBatchSize: configuration.SourceBatchSize,
 			SinkBatchSize:   configuration.SinkBatchSize,
 		},
+		Zone: configuration.Zone,
 	}
 
 	leadership := relay.LeaderElector{

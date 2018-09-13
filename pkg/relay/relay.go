@@ -18,6 +18,7 @@ type Relayer struct {
 	Sink         KafkaSink
 	Options      *Options
 	sourceQueues []*redisQueue
+	Zone         string
 }
 
 func (r Relayer) shutdownHandler(stopped chan bool) {
@@ -56,7 +57,7 @@ func (r Relayer) Run() {
 	for _, queueName := range queues {
 		fmt.Println(queueName)
 
-		taskQueue := newQueue("redis-queue", fmt.Sprintf("connection-%s", hostname()), queueName, nil, source)
+		taskQueue := newQueue("redis-queue", fmt.Sprintf("worker-%s", r.Zone), queueName, nil, source)
 		r.sourceQueues = append(r.sourceQueues, taskQueue)
 
 		taskQueue.ReturnAllUnacked()
